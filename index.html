@@ -48,7 +48,7 @@
       margin-top: 2rem;
       text-align: center;
     }
-    .reset-button, .save-button {
+    .reset-button {
       margin-top: 1.5rem;
       background-color: #fee500;
       color: #3c1e1e;
@@ -59,11 +59,37 @@
       cursor: pointer;
       margin-right: 0.5rem;
     }
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    #popup {
+      background: rgba(255, 255, 255, 0.95);
+      color: black;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 90vw;
+      width: 400px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+    .popup-card {
+      margin: 1rem 0;
+      font-weight: bold;
+    }
     #result-images {
-      margin-top: 2rem;
       display: flex;
       justify-content: center;
       gap: 1rem;
+      margin-top: 1rem;
     }
     .result-card {
       width: 100px;
@@ -83,9 +109,16 @@
 <body>
   <h1>🔮 3장 타로카드 미니게임 🔮</h1>
   <div id="card-container"></div>
-  <div class="reading" id="reading"></div>
-  <div id="result-images"></div>
   <button class="reset-button" onclick="resetGame()">다시 뽑기</button>
+
+  <div id="overlay" style="display: none">
+    <div id="popup">
+      <h2>🔮 당신의 타로 결과</h2>
+      <div id="popup-content"></div>
+      <div id="result-images"></div>
+      <button class="reset-button" onclick="closePopup()">닫기</button>
+    </div>
+  </div>
 
   <script>
     const tarotDeck = [
@@ -128,8 +161,7 @@
       const container = document.getElementById("card-container");
       container.innerHTML = "";
       selectedCards = [];
-      document.getElementById("reading").innerHTML = "";
-      document.getElementById("result-images").innerHTML = "";
+      document.getElementById("overlay").style.display = "none";
       const shuffled = [...tarotDeck].sort(() => 0.5 - Math.random());
       shuffled.forEach(card => {
         const div = document.createElement("div");
@@ -145,19 +177,19 @@
       div.textContent = cardName;
       selectedCards.push(cardName);
       if (selectedCards.length === 3) {
-        showReading();
+        showPopup();
       }
     }
 
-    function showReading() {
+    function showPopup() {
       const positions = ["과거", "현재", "미래"];
-      const readingDiv = document.getElementById("reading");
+      const contentDiv = document.getElementById("popup-content");
       const resultDiv = document.getElementById("result-images");
-      readingDiv.innerHTML = "";
+      contentDiv.innerHTML = "";
       resultDiv.innerHTML = "";
       selectedCards.forEach((card, index) => {
         const meaning = interpretations[card];
-        readingDiv.innerHTML += `<p><strong>${positions[index]}</strong> (${card}): ${meaning}</p>`;
+        contentDiv.innerHTML += `<p class='popup-card'><strong>${positions[index]}</strong> (${card}): ${meaning}</p>`;
 
         const resultCard = document.createElement("div");
         resultCard.className = "result-card";
@@ -165,6 +197,11 @@
         resultCard.onclick = () => saveCardAsImage(card);
         resultDiv.appendChild(resultCard);
       });
+      document.getElementById("overlay").style.display = "flex";
+    }
+
+    function closePopup() {
+      document.getElementById("overlay").style.display = "none";
     }
 
     function saveCardAsImage(cardName) {
