@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>타로 미니게임</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to right, #2c3e50, #4ca1af);
+      color: #fff;
+      text-align: center;
+      padding: 2rem;
+      overflow-x: hidden;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    #card-container {
+      display: grid;
+      grid-template-columns: repeat(5, 80px);
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 2rem auto;
+      max-width: 440px;
+    }
+    .card {
+      width: 80px;
+      height: 120px;
+      background-color: #333;
+      color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-weight: bold;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+      position: relative;
+    }
+    .card.revealed {
+      background-color: #f1c40f;
+      color: black;
+    }
+    .reading {
+      margin-top: 2rem;
+      text-align: center;
+    }
+    .reset-button, .save-button {
+      margin-top: 1.5rem;
+      background-color: #fee500;
+      color: #3c1e1e;
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 0.5rem;
+    }
+    #result-images {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .result-card {
+      width: 100px;
+      height: 150px;
+      background-color: white;
+      color: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #444;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔮 3장 타로카드 미니게임 🔮</h1>
+  <div id="card-container"></div>
+  <div class="reading" id="reading"></div>
+  <div id="result-images"></div>
+  <button class="reset-button" onclick="resetGame()">다시 뽑기</button>
+
+  <script>
+    const tarotDeck = [
+      "The Fool", "The Magician", "The High Priestess", "The Empress",
+      "The Emperor", "The Hierophant", "The Lovers", "The Chariot",
+      "Strength", "The Hermit", "Wheel of Fortune", "Justice",
+      "The Hanged Man", "Death", "Temperance", "The Devil",
+      "The Tower", "The Star", "The Moon", "The Sun",
+      "Judgement", "The World"
+    ];
+
+    const interpretations = {
+      "The Fool": "새로운 시작과 가능성을 의미해. 모험심이 중요한 시기야!",
+      "The Magician": "능력과 실행력이 상승 중이야. 네가 생각한 걸 현실로 만들 수 있어!",
+      "The High Priestess": "직관과 비밀, 감추어진 진실이 나타나고 있어.",
+      "The Empress": "풍요와 성장의 시기야. 감정과 사랑도 피어나고 있어!",
+      "The Emperor": "안정과 구조, 리더십이 중요해. 결단력 있는 태도가 필요해.",
+      "The Hierophant": "전통과 지혜, 사회적 규범을 따르는 것이 유리해!",
+      "The Lovers": "사랑과 관계의 기로에 서있어. 선택이 중요해지는 시점이야!",
+      "The Chariot": "결단과 추진력으로 승리할 수 있어. 멈추지 말고 달려!",
+      "Strength": "내면의 힘과 인내가 시험받는 시기야. 믿음을 가져봐!",
+      "The Hermit": "혼자의 시간과 내면 성찰이 필요해. 천천히 가도 괜찮아.",
+      "Wheel of Fortune": "운명의 수레바퀴가 돌아가고 있어! 행운이 오고 있어!",
+      "Justice": "균형과 정의가 필요해. 공정한 판단을 내려야 해.",
+      "The Hanged Man": "희생과 새로운 관점이 필요한 시기야. 멈춤도 의미 있어.",
+      "Death": "무언가 끝나고 새로운 게 시작돼. 재탄생의 의미야.",
+      "Temperance": "조화와 절제가 중요한 시기야. 균형을 잡아보자!",
+      "The Devil": "욕망과 집착, 중독을 조심해야 해. 자유로워지자!",
+      "The Tower": "예상치 못한 변화가 올 수 있어. 하지만 그것도 성장의 일부야!",
+      "The Star": "희망과 치유의 에너지가 흐르고 있어. 소원을 빌어봐!",
+      "The Moon": "혼란과 불확실성이 있어. 감정에 휘둘리지 않도록 조심해.",
+      "The Sun": "행복과 성공이 찾아와! 밝고 긍정적인 에너야!",
+      "Judgement": "과거를 돌아보고 결단을 내려야 해. 새로운 시작을 위한 마무리야.",
+      "The World": "완성과 통합의 시기야! 원하는 걸 이룰 수 있어."
+    };
+
+    let selectedCards = [];
+
+    function renderCards() {
+      const container = document.getElementById("card-container");
+      container.innerHTML = "";
+      selectedCards = [];
+      document.getElementById("reading").innerHTML = "";
+      document.getElementById("result-images").innerHTML = "";
+      const shuffled = [...tarotDeck].sort(() => 0.5 - Math.random());
+      shuffled.forEach(card => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.onclick = () => selectCard(div, card);
+        container.appendChild(div);
+      });
+    }
+
+    function selectCard(div, cardName) {
+      if (selectedCards.length >= 3 || div.classList.contains("revealed")) return;
+      div.classList.add("revealed");
+      div.textContent = cardName;
+      selectedCards.push(cardName);
+      if (selectedCards.length === 3) {
+        showReading();
+      }
+    }
+
+    function showReading() {
+      const positions = ["과거", "현재", "미래"];
+      const readingDiv = document.getElementById("reading");
+      const resultDiv = document.getElementById("result-images");
+      readingDiv.innerHTML = "";
+      resultDiv.innerHTML = "";
+      selectedCards.forEach((card, index) => {
+        const meaning = interpretations[card];
+        readingDiv.innerHTML += `<p><strong>${positions[index]}</strong> (${card}): ${meaning}</p>`;
+
+        const resultCard = document.createElement("div");
+        resultCard.className = "result-card";
+        resultCard.textContent = card;
+        resultCard.onclick = () => saveCardAsImage(card);
+        resultDiv.appendChild(resultCard);
+      });
+    }
+
+    function saveCardAsImage(cardName) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 200;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(cardName, canvas.width / 2, canvas.height / 2);
+      const link = document.createElement("a");
+      link.download = `${cardName}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    function resetGame() {
+      renderCards();
+    }
+
+    renderCards();
+  </script>
+</body>
+</html>
