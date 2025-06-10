@@ -11,7 +11,7 @@
       color: #fff;
       text-align: center;
       padding: 2rem;
-      overflow: hidden;
+      overflow-x: hidden;
     }
     h1 {
       font-size: 2rem;
@@ -37,24 +37,18 @@
       font-weight: bold;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       cursor: pointer;
-      transition: transform 0.4s ease, background-color 0.3s ease;
+      transition: background-color 0.3s ease, transform 0.3s ease;
       position: relative;
     }
-    .card.selected {
-      transform: rotateY(180deg) scale(1.1);
-    }
     .card.revealed {
-      color: black;
       background-color: #f1c40f;
+      color: black;
     }
     .reading {
       margin-top: 2rem;
-      text-align: left;
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
+      text-align: center;
     }
-    .share-button, .reset-button {
+    .reset-button, .save-button {
       margin-top: 1.5rem;
       background-color: #fee500;
       color: #3c1e1e;
@@ -65,24 +59,24 @@
       cursor: pointer;
       margin-right: 0.5rem;
     }
-    .shooting-star {
-      position: absolute;
-      width: 2px;
-      height: 60px;
-      background: linear-gradient(white, transparent);
-      animation: fall 1s ease-in forwards;
-      opacity: 0.8;
-      pointer-events: none;
+    #result-images {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
     }
-    @keyframes fall {
-      0% {
-        transform: translateY(0) translateX(0);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(200px) translateX(-50px);
-        opacity: 0;
-      }
+    .result-card {
+      width: 100px;
+      height: 150px;
+      background-color: white;
+      color: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #444;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -90,37 +84,10 @@
   <h1>🔮 3장 타로카드 미니게임 🔮</h1>
   <div id="card-container"></div>
   <div class="reading" id="reading"></div>
-  <button class="share-button" onclick="shareKakao()">카카오톡으로 공유하기</button>
+  <div id="result-images"></div>
   <button class="reset-button" onclick="resetGame()">다시 뽑기</button>
 
-  <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
   <script>
-    Kakao.init('YOUR_KAKAO_API_KEY');
-
-    function shareKakao() {
-      Kakao.Share.sendDefault({
-        objectType: 'feed',
-        content: {
-          title: '🔮 오늘의 타로를 뽑아보세요!',
-          description: '과거-현재-미래 3장의 카드로 당신의 운명을 확인해보세요!',
-          imageUrl: 'https://via.placeholder.com/300x200.png?text=TAROT',
-          link: {
-            mobileWebUrl: location.href,
-            webUrl: location.href
-          }
-        },
-        buttons: [
-          {
-            title: '지금 바로 보기',
-            link: {
-              mobileWebUrl: location.href,
-              webUrl: location.href
-            }
-          }
-        ]
-      });
-    }
-
     const tarotDeck = [
       "The Fool", "The Magician", "The High Priestess", "The Empress",
       "The Emperor", "The Hierophant", "The Lovers", "The Chariot",
@@ -162,6 +129,7 @@
       container.innerHTML = "";
       selectedCards = [];
       document.getElementById("reading").innerHTML = "";
+      document.getElementById("result-images").innerHTML = "";
       const shuffled = [...tarotDeck].sort(() => 0.5 - Math.random());
       shuffled.forEach(card => {
         const div = document.createElement("div");
@@ -172,11 +140,10 @@
     }
 
     function selectCard(div, cardName) {
-      if (selectedCards.length >= 3 || div.classList.contains("selected")) return;
-      div.classList.add("selected", "revealed");
+      if (selectedCards.length >= 3 || div.classList.contains("revealed")) return;
+      div.classList.add("revealed");
       div.textContent = cardName;
       selectedCards.push(cardName);
-      shootStar(div);
       if (selectedCards.length === 3) {
         showReading();
       }
@@ -185,20 +152,36 @@
     function showReading() {
       const positions = ["과거", "현재", "미래"];
       const readingDiv = document.getElementById("reading");
+      const resultDiv = document.getElementById("result-images");
       readingDiv.innerHTML = "";
+      resultDiv.innerHTML = "";
       selectedCards.forEach((card, index) => {
         const meaning = interpretations[card];
         readingDiv.innerHTML += `<p><strong>${positions[index]}</strong> (${card}): ${meaning}</p>`;
+
+        const resultCard = document.createElement("div");
+        resultCard.className = "result-card";
+        resultCard.textContent = card;
+        resultCard.onclick = () => saveCardAsImage(card);
+        resultDiv.appendChild(resultCard);
       });
     }
 
-    function shootStar(target) {
-      const star = document.createElement('div');
-      star.className = 'shooting-star';
-      star.style.left = target.offsetLeft + 40 + 'px';
-      star.style.top = target.offsetTop + 'px';
-      document.body.appendChild(star);
-      setTimeout(() => star.remove(), 1000);
+    function saveCardAsImage(cardName) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 200;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(cardName, canvas.width / 2, canvas.height / 2);
+      const link = document.createElement("a");
+      link.download = `${cardName}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
     }
 
     function resetGame() {
