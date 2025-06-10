@@ -71,34 +71,76 @@
       justify-content: center;
       align-items: center;
       z-index: 9999;
-    }
-    #popup {
-      background: rgba(255, 255, 255, 0.95);
-      color: black;
-      padding: 2rem;
-      border-radius: 16px;
-      max-width: 95vw;
-      width: 550px;
-      box-shadow: 0 0 30px rgba(0,0,0,0.2);
-      font-family: 'Arial Rounded MT Bold', sans-serif;
-    }
-    .popup-entry {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-    .popup-card-text {
-      font-weight: bold;
-      margin-top: 0.75rem;
-      text-align: center;
-      font-size: 0.95rem;
-      color: #444;
-      background: rgba(255,255,255,0.7);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
+    } 
+  .popup-entry-wrapper {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .popup-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+  }
+  .popup-card-text {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    text-align: center;
+    background: rgba(255,255,255,0.7);
+    padding: 0.3rem 0.5rem;
+    border-radius: 8px;
+    color: #444;
+  }
+  .result-card {
+    width: 100px;
+    height: 150px;
+    background-color: white;
+    border: 2px solid #ff99cc;
+    border-radius: 16px;
+    box-shadow: 0 0 12px rgba(255, 153, 204, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin: 0.5rem 0 0;
+  }
+</style>
+<script>
+function showPopup() {
+  const positions = ["과거", "현재", "미래"];
+  const contentDiv = document.getElementById("popup-content");
+  contentDiv.innerHTML = "";
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "popup-entry-wrapper";
+
+  selectedCards.forEach((card, index) => {
+    const meaning = interpretations[card];
+
+    const entry = document.createElement("div");
+    entry.className = "popup-entry";
+
+    const cardBox = document.createElement("div");
+    cardBox.className = "result-card";
+    cardBox.textContent = card;
+    cardBox.onclick = () => saveCardAsImage(card);
+
+    const text = document.createElement("p");
+    text.className = "popup-card-text";
+    text.innerHTML = `<strong>${positions[index]}</strong><br>(${card})<br>${meaning}`;
+
+    entry.appendChild(cardBox);
+    entry.appendChild(text);
+    wrapper.appendChild(entry);
+  });
+
+  contentDiv.appendChild(wrapper);
+  document.getElementById("overlay").style.display = "flex";
+}
   </style>
 </head>
 <body>
@@ -179,6 +221,9 @@ function showPopup() {
   const contentDiv = document.getElementById("popup-content");
   contentDiv.innerHTML = "";
 
+  const wrapper = document.createElement("div");
+  wrapper.className = "popup-entry-wrapper";
+
   selectedCards.forEach((card, index) => {
     const meaning = interpretations[card];
 
@@ -196,12 +241,12 @@ function showPopup() {
 
     entry.appendChild(cardBox);
     entry.appendChild(text);
-    contentDiv.appendChild(entry);
+    wrapper.appendChild(entry);
   });
 
+  contentDiv.appendChild(wrapper);
   document.getElementById("overlay").style.display = "flex";
 }
-
 function closePopup() {
   document.getElementById("overlay").style.display = "none";
 }
