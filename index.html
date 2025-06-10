@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>타로카드 미니게임</title>
   <style>
     body {
@@ -99,9 +99,7 @@
 </head>
 <body>
   <h1>🔮 3장 타로카드 미니게임 🔮</h1>
-
   <div id="card-container" class="card-container"></div>
-
   <button onclick="resetGame()">다시 뽑기</button>
 
   <div id="overlay">
@@ -113,7 +111,15 @@
   </div>
 
   <script>
-const contextualInterpretations = {
+    const tarotDeck = [
+      "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
+      "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
+      "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
+      "The Devil", "The Tower", "The Star", "The Moon", "The Sun",
+      "Judgement", "The World"
+    ];
+
+    const contextualInterpretations = {
   "The Fool_과거": "당신은 과거에 충동적으로 새로운 시작을 감행했을 수 있어요. 그 경험은 지금의 시야를 넓히는 데 중요한 역할을 했어요.",
   "The Fool_현재": "지금은 두려움보단 도전이 필요한 시기예요. 준비가 되어있지 않아도 발을 내딛는 용기가 필요해요.",
   "The Fool_미래": "조만간 당신에게 예기치 못한 새로운 기회가 다가올 거예요. 열린 마음으로 맞이할 준비를 해보세요.",
@@ -180,12 +186,12 @@ const contextualInterpretations = {
   "The World_과거": "과거에 하나의 사이클을 완성했어요. 그 성취가 현재의 당신을 있게 했어요.",
   "The World_현재": "지금은 목표가 마무리되는 시기예요. 통합과 완성의 의미를 곱씹어보세요.",
   "The World_미래": "앞으로 당신의 여정은 성공적으로 마무리될 거예요. 그 끝에서 새로운 문이 열릴 거예요."
-};
+    };
 
     const basicMeanings = {
-      "The Fool": "새로운 시작, 자유로운 에너지, 예측 불가한 변화",
+      "The Fool": "새로운 시작, 자유로운 에너지",
       "The Magician": "의지와 창조력, 자원 활용",
-      "The High Priestess": "직관, 숨겨진 진실, 내면의 지혜",
+      "The High Priestess": "직관, 내면의 지혜",
       "The Empress": "풍요, 사랑, 창조성",
       "The Emperor": "권위, 안정, 책임",
       "The Hierophant": "전통, 조언, 영적 가르침",
@@ -195,16 +201,16 @@ const contextualInterpretations = {
       "The Hermit": "고독, 성찰, 내면의 길",
       "Wheel of Fortune": "운명의 변화, 기회",
       "Justice": "공정, 균형, 책임",
-      "The Hanged Man": "희생, 관점 변화, 일시적 멈춤",
+      "The Hanged Man": "희생, 관점 변화",
       "Death": "끝, 변화, 새로운 시작",
       "Temperance": "조화, 절제, 균형",
-      "The Devil": "속박, 유혹, 중독",
+      "The Devil": "속박, 유혹",
       "The Tower": "파괴, 충격, 재정비",
       "The Star": "희망, 영감, 회복",
       "The Moon": "혼란, 직감, 감정의 깊이",
       "The Sun": "성공, 기쁨, 명확성",
       "Judgement": "자각, 부활, 평가",
-      "The World": "완성, 성취, 순환의 끝"
+      "The World": "완성, 성취"
     };
 
     let selectedCards = [];
@@ -229,9 +235,7 @@ const contextualInterpretations = {
       div.classList.add("revealed");
       div.textContent = cardName;
       selectedCards.push(cardName);
-      if (selectedCards.length === 3) {
-        showPopup();
-      }
+      if (selectedCards.length === 3) showPopup();
     }
 
     function showPopup() {
@@ -243,16 +247,21 @@ const contextualInterpretations = {
       wrapper.className = "popup-entry-wrapper";
 
       selectedCards.forEach((card, index) => {
+        const pos = positions[index];
+        const contextualKey = `${card}_${pos}`;
+        const meaning = contextualInterpretations[contextualKey] || basicMeanings[card];
+
         const entry = document.createElement("div");
         entry.className = "popup-entry";
 
         const cardBox = document.createElement("div");
         cardBox.className = "result-card";
         cardBox.textContent = card;
+        cardBox.onclick = () => saveCardAsImage(cardBox);
 
         const text = document.createElement("p");
         text.className = "popup-card-text";
-        text.innerHTML = `<strong>${positions[index]}</strong><br>(${card})<br>${basicMeanings[card]}`;
+        text.innerHTML = `<strong>${pos}</strong><br>(${card})<br>${meaning}`;
 
         entry.appendChild(cardBox);
         entry.appendChild(text);
@@ -270,7 +279,7 @@ const contextualInterpretations = {
     }
 
     function generateSummary(cards) {
-      return `${cards[0]}, ${cards[1]}, ${cards[2]}는 당신의 인생에서 중요한 흐름을 말하고 있어요. 내면의 소리에 귀 기울이고, 지금 필요한 방향으로 천천히 나아가 보세요.`;
+      return `${cards.join(", ")}는 당신이 서명호를 사랑할 수밖에 없는 이유를 보여주고 있어요.`;
     }
 
     function resetGame() {
@@ -281,7 +290,17 @@ const contextualInterpretations = {
       document.getElementById("overlay").style.display = "none";
     }
 
+    function saveCardAsImage(element) {
+      html2canvas(element).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "tarot-card.png";
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+
     renderCards();
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
