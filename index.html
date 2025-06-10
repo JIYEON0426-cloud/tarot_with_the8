@@ -1,11 +1,26 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>타로카드 미니게임</title>
   <style>
-    body { font-family: sans-serif; padding: 1rem; }
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom, #fff1f9, #ffe6f0);
+      padding: 1rem;
+      text-align: center;
+    }
+    h1 {
+      color: #cc338b;
+    }
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
     .popup-entry-wrapper {
       display: flex;
       justify-content: center;
@@ -40,7 +55,7 @@
       font-weight: bold;
       font-size: 0.95rem;
       cursor: pointer;
-      margin: 0.5rem 0 0;
+      flex-basis: calc(20% - 1rem);
     }
     .summary-text {
       margin-top: 2rem;
@@ -52,14 +67,44 @@
       font-size: 0.9rem;
       text-align: center;
     }
+    #overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    #popup {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 0 16px rgba(0,0,0,0.3);
+    }
+    button {
+      margin-top: 2rem;
+      padding: 0.8rem 1.2rem;
+      background: #ff99cc;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <h1>🔮 3장 타로카드 미니게임 🔮</h1>
-  <div id="card-container"></div>
+
+  <div id="card-container" class="card-container"></div>
+
   <button onclick="resetGame()">다시 뽑기</button>
 
-  <div id="overlay" style="display:none;">
+  <div id="overlay">
     <div id="popup">
       <h2>🔮 당신의 타로 결과</h2>
       <div id="popup-content"></div>
@@ -67,73 +112,176 @@
     </div>
   </div>
 
-<script>
-const tarotDeck = [
-  "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
-  "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
-  "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
-  "The Devil", "The Tower", "The Star", "The Moon", "The Sun",
-  "Judgement", "The World"
-];
+  <script>
+const contextualInterpretations = {
+  "The Fool_과거": "당신은 과거에 충동적으로 새로운 시작을 감행했을 수 있어요. 그 경험은 지금의 시야를 넓히는 데 중요한 역할을 했어요.",
+  "The Fool_현재": "지금은 두려움보단 도전이 필요한 시기예요. 준비가 되어있지 않아도 발을 내딛는 용기가 필요해요.",
+  "The Fool_미래": "조만간 당신에게 예기치 못한 새로운 기회가 다가올 거예요. 열린 마음으로 맞이할 준비를 해보세요.",
+  "The Magician_과거": "당신은 예전부터 창의적이고 능동적인 힘을 가지고 있었어요. 과거의 집중력과 의지는 당신을 성장시켰어요.",
+  "The Magician_현재": "지금은 당신이 가진 모든 능력을 활용할 수 있는 시기예요. 망설이지 말고 행동하세요.",
+  "The Magician_미래": "앞으로 당신은 원하는 것을 이룰 기회를 맞게 될 거예요. 다만, 진정한 의도를 명확히 하세요.",
+  "The High Priestess_과거": "당신은 예전부터 직관이 뛰어났어요. 당시의 내면적 성찰이 지금의 안정으로 이어졌어요.",
+  "The High Priestess_현재": "겉으로 보이는 것보다 내면의 목소리에 귀를 기울여야 해요. 조용히 깊이 있는 판단이 필요한 때예요.",
+  "The High Priestess_미래": "다가올 시기에는 불확실함 속에서도 직감이 중요한 역할을 할 거예요. 감정의 흐름을 무시하지 마세요.",
+  "The Empress_과거": "과거에 누군가의 보살핌을 받았거나, 풍요로운 시간을 보냈을 수 있어요. 그 경험이 당신을 부드럽게 만들었어요.",
+  "The Empress_현재": "지금은 창조성이나 돌봄, 감정 표현이 중요한 시기예요. 타인과의 관계에 충실하세요.",
+  "The Empress_미래": "앞으로 사랑과 풍요가 깃든 시간이 찾아올 거예요. 당신의 따뜻함이 빛을 발할 기회가 생겨요.",
+  "The Emperor_과거": "과거에 강한 책임감을 가지고 살아왔어요. 그 영향으로 현재의 당신은 단단한 기반 위에 서 있어요.",
+  "The Emperor_현재": "지금은 결단력과 리더십이 필요한 시기예요. 감정보다는 논리를 선택해야 할 순간일 수 있어요.",
+  "The Emperor_미래": "앞으로 당신은 조직이나 가족 내에서 중심적인 역할을 맡게 될 거예요. 다만 권위적인 태도는 주의하세요.",
+  "The Hierophant_과거": "전통과 질서를 중시했던 과거가 있어요. 당시의 안정이 지금의 도덕적 기준을 만들어줬어요.",
+  "The Hierophant_현재": "지금은 누군가의 조언이나 기존의 관습에 귀 기울여야 할 시기예요. 급변보단 안정이 중요해요.",
+  "The Hierophant_미래": "당신은 가까운 미래에 누군가의 멘토 역할을 하게 되거나, 새로운 가르침을 얻게 될 거예요.",
+  "The Lovers_과거": "사랑이나 중요한 결정을 했던 시기였어요. 그 선택이 지금의 관계나 가치관에 깊이 영향을 줬어요.",
+  "The Lovers_현재": "지금은 중요한 선택의 기로에 있어요. 감정과 책임 사이의 균형이 필요한 시점이에요.",
+  "The Lovers_미래": "앞으로 관계에서의 결단이 다가올 거예요. 감정만이 아닌 신중한 선택이 필요해요.",
+  "The Chariot_과거": "당신은 과거에 큰 목표를 향해 전진했어요. 성공을 위해 노력한 기억이 지금의 추진력을 만들었어요.",
+  "The Chariot_현재": "지금은 집중력과 결단력이 필요한 시기예요. 앞만 보고 달리는 용기가 필요해요.",
+  "The Chariot_미래": "당신은 곧 중요한 도전 앞에 설 거예요. 흔들리지 않고 나아가면 원하는 바를 이룰 수 있어요.",
+  "Strength_과거": "인내심과 내면의 강인함을 시험받았던 과거가 있어요. 그 시간은 당신을 성숙하게 만들었어요.",
+  "Strength_현재": "지금은 힘보다는 부드러움으로 다가가야 해요. 진정한 용기는 침착함에서 나와요.",
+  "Strength_미래": "다가올 시기에 감정의 컨트롤이 중요해질 거예요. 차분한 내면의 힘이 빛을 발할 거예요.",
+  "The Hermit_과거": "과거에 고독이나 성찰의 시간을 가졌어요. 그 시간은 당신에게 깊은 지혜를 남겼어요.",
+  "The Hermit_현재": "지금은 외부보다 내면에 집중해야 해요. 혼자만의 시간이 필요한 순간이에요.",
+  "The Hermit_미래": "곧 내면의 길을 탐구할 일이 생길 수 있어요. 깊은 사색이 새로운 길을 열어줄 거예요.",
+  "Wheel of Fortune_과거": "운명적인 사건이나 예상치 못한 변화가 있었던 과거예요. 그것이 지금을 만든 원동력이에요.",
+  "Wheel of Fortune_현재": "지금은 예측 불가능한 시기예요. 흐름에 몸을 맡기되 중심을 잃지 마세요.",
+  "Wheel of Fortune_미래": "당신의 운명이 곧 전환점을 맞을 거예요. 기회가 다가올 수 있으니 준비하세요.",
+  "Justice_과거": "과거에 당신은 공정함과 책임에 대해 고민하거나 실천해본 적이 있어요. 그 경험이 지금의 판단 기준이 되었어요.",
+  "Justice_현재": "지금은 상황을 객관적으로 바라보는 것이 중요해요. 감정보다는 이성적인 판단이 필요해요.",
+  "Justice_미래": "다가올 시기엔 당신이 내린 결정에 대한 결과를 마주하게 될 거예요. 지금의 선택을 신중히 하세요.",
+  "The Hanged Man_과거": "과거에 희생하거나 멈춰선 경험이 있었어요. 그 시간은 당신을 더 깊이 있게 만들었어요.",
+  "The Hanged Man_현재": "지금은 서두르기보단 관점을 바꿔보는 시기예요. 포기의 미학이 필요한 순간일 수 있어요.",
+  "The Hanged Man_미래": "미래에 중요한 결정을 내려야 할 때 잠시 멈추고 돌아보는 여유가 필요할 수 있어요.",
+  "Death_과거": "큰 변화나 이별, 끝맺음이 있었던 시기예요. 그 끝은 새로운 시작의 밑거름이 되었어요.",
+  "Death_현재": "지금은 무언가를 정리하고 내려놓아야 할 때예요. 변화는 아프지만 필요해요.",
+  "Death_미래": "곧 삶의 한 챕터가 마무리되고 새로운 길이 열릴 거예요. 두려움보다 기대를 품어보세요.",
+  "Temperance_과거": "당신은 과거에 균형과 조화를 위해 애썼어요. 그 경험이 지금의 안정감을 만들었어요.",
+  "Temperance_현재": "지금은 조화와 절제가 필요한 시기예요. 무리한 행동보단 중용이 필요해요.",
+  "Temperance_미래": "앞으로 다양한 요소를 조율하는 일이 생길 거예요. 갈등보단 조화를 선택하세요.",
+  "The Devil_과거": "과거에 집착하거나 얽매였던 경험이 있었어요. 그것이 당신을 힘들게 했을 수 있어요.",
+  "The Devil_현재": "지금은 중독이나 과도한 집착을 되돌아봐야 해요. 자신을 속박하는 것을 인식하세요.",
+  "The Devil_미래": "미래에는 유혹이나 얽매이는 상황이 다가올 수 있어요. 의지력을 기를 필요가 있어요.",
+  "The Tower_과거": "갑작스러운 충격이나 변화가 있었던 과거예요. 그것은 삶의 구조를 다시 세우는 계기였어요.",
+  "The Tower_현재": "지금은 불안정한 시기일 수 있어요. 기존의 것을 무너뜨리고 새로 세워야 할 때예요.",
+  "The Tower_미래": "예상치 못한 변화나 진실의 폭로가 있을 수 있어요. 무너짐 속에서 본질을 발견하세요.",
+  "The Star_과거": "과거에 희망과 회복의 시간을 가졌어요. 그 시간은 당신에게 위로가 되었어요.",
+  "The Star_현재": "지금은 치유와 희망의 에너지가 흐르고 있어요. 천천히 회복하며 나아가세요.",
+  "The Star_미래": "당신의 미래엔 희망이 가득할 거예요. 어둠이 지나고 빛나는 시기가 다가올 거예요.",
+  "The Moon_과거": "과거에 불확실함이나 감정의 혼란을 겪었어요. 그 혼돈이 당신을 단단하게 만들었어요.",
+  "The Moon_현재": "지금은 직감과 감정이 예민할 수 있어요. 혼란 속에서도 중심을 잃지 마세요.",
+  "The Moon_미래": "곧 감정의 기복이나 불확실한 상황이 다가올 수 있어요. 진실을 밝히기 위해 인내가 필요해요.",
+  "The Sun_과거": "밝고 즐거운 시간이 있었어요. 그 긍정의 에너지가 지금까지 이어지고 있어요.",
+  "The Sun_현재": "지금은 긍정적인 결과가 기대되는 시기예요. 밝은 에너지로 주변을 비추세요.",
+  "The Sun_미래": "앞으로 밝고 희망찬 일이 생길 거예요. 당신의 진심이 빛을 발할 거예요.",
+  "Judgement_과거": "과거를 되돌아보고 반성했던 시기예요. 그 시간은 당신을 성장시켰어요.",
+  "Judgement_현재": "지금은 결단과 용서가 필요한 시기예요. 자신의 판단을 믿고 움직여야 할 때예요.",
+  "Judgement_미래": "곧 당신은 중요한 깨달음이나 심판의 순간을 맞을 수 있어요. 그 결과는 당신의 선택에 달려 있어요.",
+  "The World_과거": "과거에 하나의 사이클을 완성했어요. 그 성취가 현재의 당신을 있게 했어요.",
+  "The World_현재": "지금은 목표가 마무리되는 시기예요. 통합과 완성의 의미를 곱씹어보세요.",
+  "The World_미래": "앞으로 당신의 여정은 성공적으로 마무리될 거예요. 그 끝에서 새로운 문이 열릴 거예요."
+};
 
-let selectedCards = [];
+    const basicMeanings = {
+      "The Fool": "새로운 시작, 자유로운 에너지, 예측 불가한 변화",
+      "The Magician": "의지와 창조력, 자원 활용",
+      "The High Priestess": "직관, 숨겨진 진실, 내면의 지혜",
+      "The Empress": "풍요, 사랑, 창조성",
+      "The Emperor": "권위, 안정, 책임",
+      "The Hierophant": "전통, 조언, 영적 가르침",
+      "The Lovers": "사랑, 선택, 관계의 조화",
+      "The Chariot": "전진, 의지력, 승리",
+      "Strength": "용기, 인내, 부드러운 힘",
+      "The Hermit": "고독, 성찰, 내면의 길",
+      "Wheel of Fortune": "운명의 변화, 기회",
+      "Justice": "공정, 균형, 책임",
+      "The Hanged Man": "희생, 관점 변화, 일시적 멈춤",
+      "Death": "끝, 변화, 새로운 시작",
+      "Temperance": "조화, 절제, 균형",
+      "The Devil": "속박, 유혹, 중독",
+      "The Tower": "파괴, 충격, 재정비",
+      "The Star": "희망, 영감, 회복",
+      "The Moon": "혼란, 직감, 감정의 깊이",
+      "The Sun": "성공, 기쁨, 명확성",
+      "Judgement": "자각, 부활, 평가",
+      "The World": "완성, 성취, 순환의 끝"
+    };
 
-function renderCards() {
-  const container = document.getElementById("card-container");
-  container.innerHTML = "";
-  selectedCards = [];
-  document.getElementById("overlay").style.display = "none";
-  const shuffled = [...tarotDeck].sort(() => 0.5 - Math.random());
-  shuffled.forEach(card => {
-    const div = document.createElement("div");
-    div.className = "result-card";
-    div.textContent = "?";
-    div.onclick = () => selectCard(div, card);
-    container.appendChild(div);
-  });
-}
+    let selectedCards = [];
 
-function selectCard(div, cardName) {
-  if (selectedCards.length >= 3 || div.classList.contains("revealed")) return;
-  div.classList.add("revealed");
-  div.textContent = cardName;
-  selectedCards.push(cardName);
-  if (selectedCards.length === 3) {
-    showPopup();
-  }
-}
+    function renderCards() {
+      const container = document.getElementById("card-container");
+      container.innerHTML = "";
+      selectedCards = [];
+      document.getElementById("overlay").style.display = "none";
+      const shuffled = [...tarotDeck].sort(() => 0.5 - Math.random());
+      shuffled.forEach(card => {
+        const div = document.createElement("div");
+        div.className = "result-card";
+        div.textContent = "?";
+        div.onclick = () => selectCard(div, card);
+        container.appendChild(div);
+      });
+    }
 
-function closePopup() {
-  document.getElementById("overlay").style.display = "none";
-}
+    function selectCard(div, cardName) {
+      if (selectedCards.length >= 3 || div.classList.contains("revealed")) return;
+      div.classList.add("revealed");
+      div.textContent = cardName;
+      selectedCards.push(cardName);
+      if (selectedCards.length === 3) {
+        showPopup();
+      }
+    }
 
-function showPopup() {
-  const contentDiv = document.getElementById("popup-content");
-  contentDiv.innerHTML = "";
-  const wrapper = document.createElement("div");
-  wrapper.className = "popup-entry-wrapper";
-  selectedCards.forEach((card, index) => {
-    const entry = document.createElement("div");
-    entry.className = "popup-entry";
-    const cardBox = document.createElement("div");
-    cardBox.className = "result-card";
-    cardBox.textContent = card;
-    const text = document.createElement("p");
-    text.className = "popup-card-text";
-    text.innerHTML = `<strong>${["과거", "현재", "미래"][index]}</strong><br>(${card})<br>해석이 여기에 들어가요`;
-    entry.appendChild(cardBox);
-    entry.appendChild(text);
-    wrapper.appendChild(entry);
-  });
-  contentDiv.appendChild(wrapper);
-  document.getElementById("overlay").style.display = "block";
-}
+    function showPopup() {
+      const positions = ["과거", "현재", "미래"];
+      const contentDiv = document.getElementById("popup-content");
+      contentDiv.innerHTML = "";
 
-function resetGame() {
-  renderCards();
-}
+      const wrapper = document.createElement("div");
+      wrapper.className = "popup-entry-wrapper";
 
-renderCards();
-</script>
+      selectedCards.forEach((card, index) => {
+        const entry = document.createElement("div");
+        entry.className = "popup-entry";
+
+        const cardBox = document.createElement("div");
+        cardBox.className = "result-card";
+        cardBox.textContent = card;
+
+        const text = document.createElement("p");
+        text.className = "popup-card-text";
+        text.innerHTML = `<strong>${positions[index]}</strong><br>(${card})<br>${basicMeanings[card]}`;
+
+        entry.appendChild(cardBox);
+        entry.appendChild(text);
+        wrapper.appendChild(entry);
+      });
+
+      contentDiv.appendChild(wrapper);
+
+      const summary = document.createElement("div");
+      summary.className = "summary-text";
+      summary.textContent = generateSummary(selectedCards);
+      contentDiv.appendChild(summary);
+
+      document.getElementById("overlay").style.display = "flex";
+    }
+
+    function generateSummary(cards) {
+      return `${cards[0]}, ${cards[1]}, ${cards[2]}는 당신의 인생에서 중요한 흐름을 말하고 있어요. 내면의 소리에 귀 기울이고, 지금 필요한 방향으로 천천히 나아가 보세요.`;
+    }
+
+    function resetGame() {
+      renderCards();
+    }
+
+    function closePopup() {
+      document.getElementById("overlay").style.display = "none";
+    }
+
+    renderCards();
+  </script>
 </body>
 </html>
