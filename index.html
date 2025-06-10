@@ -11,23 +11,25 @@
       color: #fff;
       text-align: center;
       padding: 2rem;
+      overflow: hidden;
     }
     h1 {
       font-size: 2rem;
       margin-bottom: 1rem;
     }
     #card-container {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(5, 80px);
       justify-content: center;
       gap: 0.5rem;
-      margin: 2rem 0;
+      margin: 2rem auto;
+      max-width: 440px;
     }
     .card {
       width: 80px;
       height: 120px;
-      background-color: #f1c40f;
-      color: #000;
+      background-color: #333;
+      color: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -35,10 +37,15 @@
       font-weight: bold;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       cursor: pointer;
+      transition: transform 0.4s ease, background-color 0.3s ease;
+      position: relative;
     }
     .card.selected {
-      background-color: #2ecc71;
-      color: white;
+      transform: rotateY(180deg) scale(1.1);
+    }
+    .card.revealed {
+      color: black;
+      background-color: #f1c40f;
     }
     .reading {
       margin-top: 2rem;
@@ -47,8 +54,8 @@
       margin-left: auto;
       margin-right: auto;
     }
-    .share-button {
-      margin-top: 2rem;
+    .share-button, .reset-button {
+      margin-top: 1.5rem;
       background-color: #fee500;
       color: #3c1e1e;
       padding: 0.8rem 1.5rem;
@@ -56,6 +63,26 @@
       border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
+      margin-right: 0.5rem;
+    }
+    .shooting-star {
+      position: absolute;
+      width: 2px;
+      height: 60px;
+      background: linear-gradient(white, transparent);
+      animation: fall 1s ease-in forwards;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+    @keyframes fall {
+      0% {
+        transform: translateY(0) translateX(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(200px) translateX(-50px);
+        opacity: 0;
+      }
     }
   </style>
 </head>
@@ -64,10 +91,11 @@
   <div id="card-container"></div>
   <div class="reading" id="reading"></div>
   <button class="share-button" onclick="shareKakao()">카카오톡으로 공유하기</button>
+  <button class="reset-button" onclick="resetGame()">다시 뽑기</button>
 
   <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
   <script>
-    Kakao.init('YOUR_KAKAO_API_KEY'); // 여기에 발급받은 JS 키를 넣어줘!
+    Kakao.init('YOUR_KAKAO_API_KEY');
 
     function shareKakao() {
       Kakao.Share.sendDefault({
@@ -122,7 +150,7 @@
       "The Tower": "예상치 못한 변화가 올 수 있어. 하지만 그것도 성장의 일부야!",
       "The Star": "희망과 치유의 에너지가 흐르고 있어. 소원을 빌어봐!",
       "The Moon": "혼란과 불확실성이 있어. 감정에 휘둘리지 않도록 조심해.",
-      "The Sun": "행복과 성공이 찾아와! 밝고 긍정적인 에너지야!",
+      "The Sun": "행복과 성공이 찾아와! 밝고 긍정적인 에너야!",
       "Judgement": "과거를 돌아보고 결단을 내려야 해. 새로운 시작을 위한 마무리야.",
       "The World": "완성과 통합의 시기야! 원하는 걸 이룰 수 있어."
     };
@@ -132,11 +160,12 @@
     function renderCards() {
       const container = document.getElementById("card-container");
       container.innerHTML = "";
+      selectedCards = [];
+      document.getElementById("reading").innerHTML = "";
       const shuffled = [...tarotDeck].sort(() => 0.5 - Math.random());
       shuffled.forEach(card => {
         const div = document.createElement("div");
         div.className = "card";
-        div.textContent = card;
         div.onclick = () => selectCard(div, card);
         container.appendChild(div);
       });
@@ -144,9 +173,10 @@
 
     function selectCard(div, cardName) {
       if (selectedCards.length >= 3 || div.classList.contains("selected")) return;
-      div.classList.add("selected");
+      div.classList.add("selected", "revealed");
+      div.textContent = cardName;
       selectedCards.push(cardName);
-
+      shootStar(div);
       if (selectedCards.length === 3) {
         showReading();
       }
@@ -160,6 +190,19 @@
         const meaning = interpretations[card];
         readingDiv.innerHTML += `<p><strong>${positions[index]}</strong> (${card}): ${meaning}</p>`;
       });
+    }
+
+    function shootStar(target) {
+      const star = document.createElement('div');
+      star.className = 'shooting-star';
+      star.style.left = target.offsetLeft + 40 + 'px';
+      star.style.top = target.offsetTop + 'px';
+      document.body.appendChild(star);
+      setTimeout(() => star.remove(), 1000);
+    }
+
+    function resetGame() {
+      renderCards();
     }
 
     renderCards();
