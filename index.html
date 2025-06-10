@@ -1,67 +1,139 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타로카드 미니게임</title>
+  <style>
+    body { font-family: sans-serif; padding: 1rem; }
+    .popup-entry-wrapper {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .popup-entry {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 120px;
+    }
+    .popup-card-text {
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      text-align: center;
+      background: rgba(255,255,255,0.7);
+      padding: 0.3rem 0.5rem;
+      border-radius: 8px;
+      color: #444;
+    }
+    .result-card {
+      width: 100px;
+      height: 150px;
+      background-color: white;
+      border: 2px solid #ff99cc;
+      border-radius: 16px;
+      box-shadow: 0 0 12px rgba(255, 153, 204, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin: 0.5rem 0 0;
+    }
+    .summary-text {
+      margin-top: 2rem;
+      background: rgba(255,255,255,0.8);
+      border-radius: 12px;
+      padding: 1rem;
+      color: #333;
+      font-weight: bold;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-<h1>🔮 3장 타로카드 미니게임 🔮</h1>
-<div id="popup-content"></div>
-<div id="overlay" style="display:none;"></div>
+  <h1>🔮 3장 타로카드 미니게임 🔮</h1>
+  <div id="card-container"></div>
+  <button onclick="resetGame()">다시 뽑기</button>
 
-<style>
-  .popup-entry-wrapper {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  .popup-entry {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 120px;
-  }
-  .popup-card-text {
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-    text-align: center;
-    background: rgba(255,255,255,0.7);
-    padding: 0.3rem 0.5rem;
-    border-radius: 8px;
-    color: #444;
-  }
-  .result-card {
-    width: 100px;
-    height: 150px;
-    background-color: white;
-    border: 2px solid #ff99cc;
-    border-radius: 16px;
-    box-shadow: 0 0 12px rgba(255, 153, 204, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 0.95rem;
-    cursor: pointer;
-    margin: 0.5rem 0 0;
-  }
-  .summary-text {
-    margin-top: 2rem;
-    background: rgba(255,255,255,0.8);
-    border-radius: 12px;
-    padding: 1rem;
-    color: #333;
-    font-weight: bold;
-    font-size: 0.9rem;
-    text-align: center;
-  }
-</style>
+  <div id="overlay" style="display:none;">
+    <div id="popup">
+      <h2>🔮 당신의 타로 결과</h2>
+      <div id="popup-content"></div>
+      <button onclick="closePopup()">닫기</button>
+    </div>
+  </div>
+
 <script>
-// 전체 카드 해석 포함된 스크립트 생략 없이 그대로 삽입됨
-// 이 자리에 본문 내용 삽입 (캔버스에서 복사된 JS 포함)
-</script>
+const tarotDeck = [
+  "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
+  "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
+  "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
+  "The Devil", "The Tower", "The Star", "The Moon", "The Sun",
+  "Judgement", "The World"
+];
 
+let selectedCards = [];
+
+function renderCards() {
+  const container = document.getElementById("card-container");
+  container.innerHTML = "";
+  selectedCards = [];
+  document.getElementById("overlay").style.display = "none";
+  const shuffled = [...tarotDeck].sort(() => 0.5 - Math.random());
+  shuffled.forEach(card => {
+    const div = document.createElement("div");
+    div.className = "result-card";
+    div.textContent = "?";
+    div.onclick = () => selectCard(div, card);
+    container.appendChild(div);
+  });
+}
+
+function selectCard(div, cardName) {
+  if (selectedCards.length >= 3 || div.classList.contains("revealed")) return;
+  div.classList.add("revealed");
+  div.textContent = cardName;
+  selectedCards.push(cardName);
+  if (selectedCards.length === 3) {
+    showPopup();
+  }
+}
+
+function closePopup() {
+  document.getElementById("overlay").style.display = "none";
+}
+
+function showPopup() {
+  const contentDiv = document.getElementById("popup-content");
+  contentDiv.innerHTML = "";
+  const wrapper = document.createElement("div");
+  wrapper.className = "popup-entry-wrapper";
+  selectedCards.forEach((card, index) => {
+    const entry = document.createElement("div");
+    entry.className = "popup-entry";
+    const cardBox = document.createElement("div");
+    cardBox.className = "result-card";
+    cardBox.textContent = card;
+    const text = document.createElement("p");
+    text.className = "popup-card-text";
+    text.innerHTML = `<strong>${["과거", "현재", "미래"][index]}</strong><br>(${card})<br>해석이 여기에 들어가요`;
+    entry.appendChild(cardBox);
+    entry.appendChild(text);
+    wrapper.appendChild(entry);
+  });
+  contentDiv.appendChild(wrapper);
+  document.getElementById("overlay").style.display = "block";
+}
+
+function resetGame() {
+  renderCards();
+}
+
+renderCards();
+</script>
 </body>
 </html>
