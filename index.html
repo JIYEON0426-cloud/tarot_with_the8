@@ -1,31 +1,179 @@
-<style>
-/* ... 기존 스타일 유지 ... */
-#popup {
-  background: rgba(255, 255, 255, 0.95);
-  color: black;
-  padding: 2rem;
-  border-radius: 12px;
-  max-width: 95vw;
-  width: 500px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.3);
-}
-#popup-content {
-  margin-top: 1rem;
-  text-align: left;
-}
-.popup-entry {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-.popup-card-text {
-  font-weight: bold;
-  margin-top: 0.5rem;
-  text-align: center;
-}
-</style>
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>타로카드 미니게임</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom, #fef2ff, #e0c3fc);
+      color: #333;
+      text-align: center;
+      padding: 2rem;
+      overflow-x: hidden;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    #card-container {
+      display: grid;
+      grid-template-columns: repeat(5, 80px);
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 2rem auto;
+      max-width: 440px;
+    }
+    .card {
+      background: url('https://i.imgur.com/MYpOmCR.png') center/cover no-repeat;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+      cursor: pointer;
+      width: 80px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .card.revealed {
+      background-color: white;
+      background-image: none;
+      color: black;
+    }
+    .result-card {
+      width: 100px;
+      height: 150px;
+      background-color: white;
+      border: 2px solid #ff99cc;
+      border-radius: 16px;
+      box-shadow: 0 0 12px rgba(255, 153, 204, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin: 0.5rem 0;
+    }
+    #overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    #popup {
+      background: rgba(255, 255, 255, 0.95);
+      color: black;
+      padding: 2rem;
+      border-radius: 16px;
+      max-width: 95vw;
+      width: 550px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.2);
+      font-family: 'Arial Rounded MT Bold', sans-serif;
+    }
+    .popup-entry {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .popup-card-text {
+      font-weight: bold;
+      margin-top: 0.75rem;
+      text-align: center;
+      font-size: 0.95rem;
+      color: #444;
+      background: rgba(255,255,255,0.7);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <h1>🔮 3장 타로카드 미니게임 🔮</h1>
+  <div id="card-container"></div>
+  <button onclick="resetGame()">다시 뽑기</button>
+  <div id="overlay" style="display: none">
+    <div id="popup">
+      <h2>🔮 당신의 타로 결과</h2>
+      <div id="popup-content"></div>
+      <button onclick="closePopup()">닫기</button>
+    </div>
+  </div>
+
 <script>
+const tarotDeck = [
+  "The Fool", "The Magician", "The High Priestess", "The Empress",
+  "The Emperor", "The Hierophant", "The Lovers", "The Chariot",
+  "Strength", "The Hermit", "Wheel of Fortune", "Justice",
+  "The Hanged Man", "Death", "Temperance", "The Devil",
+  "The Tower", "The Star", "The Moon", "The Sun",
+  "Judgement", "The World"
+];
+
+const interpretations = {
+  "The Fool": "새로운 시작과 가능성을 의미해요. 모험심을 가지고 도전해봐요!",
+  "The Magician": "지금은 원하는 것을 이룰 수 있는 능력이 있어요. 자신감을 가지세요!",
+  "The High Priestess": "직관과 잠재의식이 강해져요. 마음속 목소리를 들어보세요.",
+  "The Empress": "풍요와 창조, 사랑이 넘치는 시기예요. 감성에 집중해보세요.",
+  "The Emperor": "안정과 규칙, 리더십이 중요한 시기예요. 중심을 잡아야 해요.",
+  "The Hierophant": "전통과 지혜를 따르는 것이 좋아요. 누군가의 조언도 도움이 돼요.",
+  "The Lovers": "중요한 선택의 기로에 있어요. 사랑과 관계에 집중해보세요.",
+  "The Chariot": "강한 의지로 전진할 때예요. 승리와 성취가 눈앞에 있어요!",
+  "Strength": "인내와 부드러운 힘이 필요한 시기예요. 용기를 가지세요.",
+  "The Hermit": "혼자만의 시간이 필요해요. 내면의 목소리를 들어보세요.",
+  "Wheel of Fortune": "운명이 변하는 시점이에요. 기회를 잘 포착하세요!",
+  "Justice": "균형과 공정함이 중요해요. 신중한 판단이 필요해요.",
+  "The Hanged Man": "멈추고 바라보는 시기예요. 새로운 시각이 필요해요.",
+  "Death": "무언가의 끝이 곧 새로운 시작이 될 거예요. 변화를 받아들이세요.",
+  "Temperance": "조화와 균형을 유지하세요. 서두르지 말고 천천히 가요.",
+  "The Devil": "욕망이나 중독에서 벗어날 필요가 있어요. 자신을 돌봐주세요.",
+  "The Tower": "예기치 않은 변화가 있어요. 무너진 후에 새로운 기반이 생겨요.",
+  "The Star": "희망과 영감의 빛이 보여요. 믿음을 잃지 마세요!",
+  "The Moon": "혼란과 불확실함 속에서 감정을 잘 다스려야 해요.",
+  "The Sun": "행복과 성공이 찾아와요! 모든 것이 빛나고 있어요 ☀️",
+  "Judgement": "과거를 돌아보고 새로운 기회를 잡을 때예요. 깨어날 시간이예요.",
+  "The World": "완성과 성취! 지금까지의 노력이 결실을 맺어요 🌏"
+};
+
+let selectedCards = [];
+
+function renderCards() {
+  const container = document.getElementById("card-container");
+  container.innerHTML = "";
+  selectedCards = [];
+  document.getElementById("overlay").style.display = "none";
+  const shuffled = [...tarotDeck].sort(() => 0.5 - Math.random());
+  shuffled.forEach(card => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.onclick = () => selectCard(div, card);
+    container.appendChild(div);
+  });
+}
+
+function selectCard(div, cardName) {
+  if (selectedCards.length >= 3 || div.classList.contains("revealed")) return;
+  div.classList.add("revealed");
+  div.textContent = cardName;
+  selectedCards.push(cardName);
+  if (selectedCards.length === 3) {
+    showPopup();
+  }
+}
+
 function showPopup() {
   const positions = ["과거", "현재", "미래"];
   const contentDiv = document.getElementById("popup-content");
@@ -44,7 +192,7 @@ function showPopup() {
 
     const text = document.createElement("p");
     text.className = "popup-card-text";
-    text.innerHTML = `<strong>${positions[index]}</strong> (${card}): ${meaning}`;
+    text.innerHTML = `<strong>${positions[index]}</strong><br>(${card})<br>${meaning}`;
 
     entry.appendChild(cardBox);
     entry.appendChild(text);
@@ -53,4 +201,33 @@ function showPopup() {
 
   document.getElementById("overlay").style.display = "flex";
 }
+
+function closePopup() {
+  document.getElementById("overlay").style.display = "none";
+}
+
+function saveCardAsImage(cardName) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 200;
+  canvas.height = 300;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "black";
+  ctx.font = "20px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(cardName, canvas.width / 2, canvas.height / 2);
+  const link = document.createElement("a");
+  link.download = `${cardName}.png`;
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function resetGame() {
+  renderCards();
+}
+
+renderCards();
 </script>
+</body>
+</html>
